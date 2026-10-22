@@ -1,13 +1,6 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <title>Heure</title>
-</head>
-<body>
-    <h1>Heure et date</h1>
+<x-layout>
+    <x-slot:title>Heure du serveur - Mini-CMS</x-slot:title>
 
-    <p>Heure : {{ $heure }}</p>
-    <p>Date : {{ $date }}</p>
-</body>
-</html>
+    <h1 class="text-3xl font-bold">Heure du serveur</h1>
+    <p class="mt-4 text-gray-700">Il est {{ $heure }}, le {{ $date }}.</p>
+</x-layout>
