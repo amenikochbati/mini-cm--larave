@@ -1,106 +1,69 @@
-# Mini CMS Laravel
+# Mini-CMS
 
-## Présentation
+Projet fil rouge de l'Atelier Framework Côté Serveur (Laravel 13, PHP 8.3+), 3e année MDW, ISET Sidi Bouzid.
 
-Mini CMS est un projet web développé avec Laravel dans le cadre d'un atelier de développement web. Il permet de découvrir les routes Laravel, les vues Blade et les bases de la gestion de versions avec Git et GitHub.
+Auteur : Ameni Kochbati, groupe MDW33.
 
-## Fonctionnalités
+Mini-CMS évoluera au fil du semestre vers une petite plateforme de publication : pages publiques, back-office authentifié, API JSON et tests Pest. Chaque session se termine par un tag Git (`lab-01`, `lab-01b`, puis un tag par session).
 
-- Page d'accueil.
-- Pages de démonstration : `/bonjour`, `/bonjour-court`, `/bienvenue`, `/heure` et `/version`.
-- Page À propos : `/a-propos`.
+## État actuel (tag lab-01b)
+
+- Routes en closures : `/`, `/bonjour`, `/bonjour-court`, `/bienvenue`, `/version`, `/heure` et `/a-propos`.
+- Vues Blade : `bienvenue`, `heure` et `a-propos`.
+- Base de données SQLite locale (`database/database.sqlite`, non versionnée).
 
 ## Prérequis
 
-Installer les outils suivants :
+- PHP et Composer (PHP 8.3 ou plus depuis https://www.php.net/downloads, avec les extensions curl, fileinfo, mbstring, openssl, pdo_sqlite, sqlite3 et zip activées dans php.ini, et Composer depuis https://getcomposer.org).
+- Node.js LTS et npm.
+- Git.
 
-- PHP
-- Composer
-- Node.js et npm
-- Git
+## Installation
 
-## Installation sous Windows (PowerShell)
-
-Ouvrir PowerShell dans le dossier où vous souhaitez installer le projet, puis exécuter :
-
-```powershell
-git clone https://github.com/amenikochbati/mini-cm--larave.git
-cd mini-cm--larave
-Copy-Item .env.example .env
-composer install
-npm install
-php artisan key:generate
-```
-
-Configurer les variables nécessaires dans `.env` si le projet utilise une base de données.
-
-Démarrer le serveur Laravel :
-
-```powershell
-php artisan serve
-```
-
-Si les ressources front-end sont nécessaires, ouvrir un deuxième terminal dans le dossier du projet et exécuter :
-
-```powershell
-npm run dev
-```
-
-## Installation sous Linux ou macOS (Bash)
+### Bash (Git Bash, macOS, Linux)
 
 ```bash
 git clone https://github.com/amenikochbati/mini-cm--larave.git
 cd mini-cm--larave
+composer install
+npm install
 cp .env.example .env
+php artisan key:generate
+touch database/database.sqlite
+php artisan migrate
+composer run dev
+```
+
+### PowerShell (Windows)
+
+```powershell
+git clone https://github.com/amenikochbati/mini-cm--larave.git
+cd mini-cm--larave
 composer install
 npm install
+copy .env.example .env
 php artisan key:generate
+New-Item database\database.sqlite -ItemType File
+php artisan migrate
+composer run dev
 ```
 
-Configurer les variables nécessaires dans `.env` si le projet utilise une base de données.
-
-Démarrer le serveur Laravel :
-
-```bash
-php artisan serve
-```
-
-Si les ressources front-end sont nécessaires, ouvrir un deuxième terminal et exécuter :
-
-```bash
-npm run dev
-```
-
-## Accès aux pages
-
-Après le démarrage du serveur, ouvrir :
-
-- Accueil : http://127.0.0.1:8000/
-- Bienvenue : http://127.0.0.1:8000/bienvenue
-- À propos : http://127.0.0.1:8000/a-propos
+Ouvrir ensuite http://localhost:8000 (adresse de l'application, différente de l'adresse de Vite sur le port 5173).
 
 ## Captures d'écran
 
-Les captures d'écran disponibles sont :
+### Page d'accueil
 
-- Accueil : `screenshots/s01-accueil.png`
-- Bienvenue : `screenshots/s01-bienvenue.png`
-- Liste des routes : `screenshots/s01-route-list.png`
+![Page d'accueil de Mini-CMS](screenshots/s01-accueil.png)
 
-## Git et GitHub
+### Page Bienvenue
 
-La branche principale est `main`.
+![Page Bienvenue](screenshots/s01-bienvenue.png)
 
-Tags du TP :
-- `lab-01` : état initial.
-- `lab-01b` : état final du livrable, à créer après les dernières modifications et vérifications.
+### Liste des routes
 
-## Fichiers ignorés
+![Sortie de php artisan route:list](screenshots/s01-route-list.png)
 
-Le fichier `.env`, les dossiers `vendor/` et `node_modules/`, ainsi que les bases SQLite locales, sont exclus du suivi Git lorsqu'ils correspondent aux règles de `.gitignore`.
+### Page À propos
 
-Ces éléments ne doivent pas être publiés, car ils peuvent contenir des informations sensibles, des dépendances installées ou des données locales.
-
-## Auteur
-
-Ameni Kochbati
+![Page À propos](screenshots/s02-a-propos.png)
