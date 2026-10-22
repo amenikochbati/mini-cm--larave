@@ -18,7 +18,7 @@ Route::get('/bienvenue', function () {
     ]);
 });
 Route::get('/version', function () {
-    return 'Laravel ' . app()->version() . ' - PHP ' . PHP_VERSION;
+    return 'Laravel '.app()->version().' - PHP '.PHP_VERSION;
 });
 Route::get('/heure', function () {
     return view('heure', [
@@ -27,5 +27,8 @@ Route::get('/heure', function () {
     ]);
 });
 Route::get('/a-propos', function () {
-    return view('a-propos');
+    return view('a-propos', [
+        'auteur' => 'Ameni Kochbati',
+        'groupe' => 'MDW33',
+    ]);
 });
