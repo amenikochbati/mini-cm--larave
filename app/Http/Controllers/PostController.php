@@ -2,97 +2,148 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StorePostRequest;
+use App\Http\Requests\UpdatePostRequest;
+use App\Models\Category;
+use App\Models\Post;
+use App\Models\Tag;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 
 class PostController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
         return view('posts.index', [
             'heading' => 'Tous les articles',
-            'posts' => $this->posts(),
+            'posts' => Post::visibleTo($request->user())->with('user', 'category', 'tags')->latest('id')->paginate(4),
         ]);
     }
 
     public function archive(string $year): View
     {
-        $posts = array_filter(
-            $this->posts(),
-            fn (array $post): bool => $post['year'] === (int) $year
-        );
-
         return view('posts.index', [
             'heading' => 'Articles de '.$year,
-            'posts' => $posts,
+            'posts' => Post::published()
+                ->with('user', 'category', 'tags')
+                ->whereYear('published_at', $year)
+                ->latest('id')
+                ->paginate(4),
         ]);
     }
 
-    public function show(string $slug): View
+    public function byCategory(Category $category): View
     {
-        $post = $this->posts()[$slug] ?? null;
-
-        if ($post === null) {
-            abort(404);
-        }
-
-        return view('posts.show', compact('post'));
+        return view('posts.index', [
+            'heading' => 'Catégorie : '.$category->name,
+            'posts' => $category->posts()
+                ->published()
+                ->with('user', 'category', 'tags')
+                ->latest('published_at')
+                ->paginate(4),
+        ]);
     }
 
-    private function posts(): array
+    public function byTag(Tag $tag): View
     {
-        return [
-            'bienvenue-sur-mini-cms' => [
-                'slug' => 'bienvenue-sur-mini-cms',
-                'title' => 'Bienvenue sur Mini-CMS',
-                'excerpt' => "Présentation du projet fil rouge de l'atelier et de ses objectifs.",
-                'author' => 'Équipe Mini-CMS',
-                'date' => '01/10/2026',
-                'year' => 2026,
-                'featured' => true,
-                'body' => [
-                    "Mini-CMS est la petite plateforme de publication que vous construisez tout au long de l'atelier.",
-                    "Chaque semaine, une nouvelle fonctionnalité s'ajoute au même projet, de la page d'accueil jusqu'à l'API.",
-                ],
-            ],
-            'comprendre-le-routage' => [
-                'slug' => 'comprendre-le-routage',
-                'title' => 'Comprendre le routage Laravel',
-                'excerpt' => "Comment une URL arrive jusqu'à un contrôleur et une vue.",
-                'author' => 'Équipe Mini-CMS',
-                'date' => '03/10/2026',
-                'year' => 2026,
-                'featured' => false,
-                'body' => [
-                    'Une route associe une URL à une action. Donner un nom à la route permet de générer le lien avec route().',
-                    "Les paramètres, comme le slug d'un article, sont transmis automatiquement à la méthode du contrôleur.",
-                ],
-            ],
-            'les-composants-blade' => [
-                'slug' => 'les-composants-blade',
-                'title' => 'Les composants Blade',
-                'excerpt' => 'Écrire une fois, réutiliser partout : la navigation, les cartes et les alertes.',
-                'author' => 'Équipe Mini-CMS',
-                'date' => '06/10/2026',
-                'year' => 2026,
-                'featured' => false,
-                'body' => [
-                    'Un composant anonyme est un simple fichier Blade placé dans le dossier components.',
-                    'Il reçoit des propriétés avec @props et du contenu avec le slot, ce qui évite de recopier le même HTML.',
-                ],
-            ],
-            'preparer-la-suite' => [
-                'slug' => 'preparer-la-suite',
-                'title' => 'Préparer la suite du projet',
-                'excerpt' => 'Les articles sont encore dans un tableau PHP : voici ce qui arrive ensuite.',
-                'author' => 'Équipe Mini-CMS',
-                'date' => '08/10/2026',
-                'year' => 2026,
-                'featured' => false,
-                'body' => [
-                    "Pour l'instant, les articles vivent dans un tableau écrit dans le contrôleur.",
-                    'Dans la prochaine session, ils seront enregistrés dans une base de données.',
-                ],
-            ],
-        ];
+        return view('posts.index', [
+            'heading' => 'Tag : '.$tag->name,
+            'posts' => $tag->posts()
+                ->published()
+                ->with('user', 'category', 'tags')
+                ->latest('published_at')
+                ->paginate(4),
+        ]);
+    }
+
+    public function create(): View
+    {
+        Gate::authorize('create', Post::class);
+
+        return view('posts.create', [
+            'categories' => Category::orderBy('name')->get(),
+            'tags' => Tag::orderBy('name')->get(),
+        ]);
+    }
+
+    public function store(StorePostRequest $request): RedirectResponse
+    {
+        $validated = $request->validated();
+
+        $validated['is_published'] = $request->boolean('is_published');
+        $validated['published_at'] = $validated['is_published'] ? now() : null;
+
+        $post = $request->user()->posts()->create(Arr::except($validated, ['tags']));
+        $post->tags()->sync($validated['tags'] ?? []);
+
+        return redirect()->route('posts.show', $post)->with('success', 'Article créé.');
+    }
+
+    public function show(Post $post): View
+    {
+        Gate::authorize('view', $post);
+
+        $post->load('user', 'category', 'tags');
+
+        $relatedPosts = $post->category?->posts()
+            ->with('user', 'category', 'tags')
+            ->where('posts.id', '!=', $post->getKey())
+            ->latest('id')
+            ->take(3)
+            ->get() ?? collect();
+
+        return view('posts.show', compact('post', 'relatedPosts'));
+    }
+
+    public function edit(Post $post): View
+    {
+        Gate::authorize('update', $post);
+
+        $post->load('tags');
+
+        return view('posts.edit', [
+            'post' => $post,
+            'categories' => Category::orderBy('name')->get(),
+            'tags' => Tag::orderBy('name')->get(),
+        ]);
+    }
+
+    public function update(UpdatePostRequest $request, Post $post): RedirectResponse
+    {
+        $validated = $request->validated();
+
+        $validated['is_published'] = $request->boolean('is_published');
+        $validated['published_at'] = $validated['is_published'] ? ($post->published_at ?? now()) : null;
+
+        $post->update(Arr::except($validated, ['tags']));
+        $post->tags()->sync($validated['tags'] ?? []);
+
+        return redirect()->route('posts.show', $post)->with('success', 'Article mis à jour.');
+    }
+
+    public function destroy(Post $post): RedirectResponse
+    {
+        Gate::authorize('delete', $post);
+
+        $post->delete();
+
+        return redirect()->route('posts.index')->with('success', 'Article supprimé.');
+    }
+
+    public function togglePublication(Post $post): RedirectResponse
+    {
+        Gate::authorize('update', $post);
+
+        $isPublished = ! $post->is_published;
+
+        $post->update([
+            'is_published' => $isPublished,
+            'published_at' => $isPublished ? now() : null,
+        ]);
+
+        return redirect()->route('posts.show', $post)->with('success', $isPublished ? 'Article publié.' : 'Article dépublié.');
     }
 }
