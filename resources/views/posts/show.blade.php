@@ -1,16 +1,70 @@
 <x-layout>
-    <x-slot:title>{{ $post['title'] }} - Mini-CMS</x-slot:title>
+    <x-slot:title>{{ $post->title }} - Mini-CMS</x-slot:title>
 
     <article class="max-w-2xl">
         <a href="{{ route('posts.index') }}" class="text-sm text-indigo-600 hover:underline">Retour aux articles</a>
 
-        <h1 class="mb-2 mt-4 text-3xl font-bold">{{ $post['title'] }}</h1>
-        <p class="mb-6 text-sm text-gray-500">{{ $post['author'] }} - {{ $post['date'] }}</p>
+        <h1 class="mb-2 mt-4 text-3xl font-bold">{{ $post->title }}</h1>
 
-        <div class="space-y-4 leading-relaxed text-gray-800">
-            @foreach ($post['body'] as $paragraph)
-                <p>{{ $paragraph }}</p>
-            @endforeach
-        </div>
+        <p class="mb-4 text-sm text-gray-500">
+            @if ($post->published_at)
+                Publié le {{ $post->published_at->format('d/m/Y') }}
+            @else
+                Brouillon
+            @endif
+            - {{ $post->category?->name ?? 'Sans catégorie' }} - par {{ $post->user?->name ?? 'auteur inconnu' }}
+        </p>
+
+        @if ($post->tags->isNotEmpty())
+            <ul class="mb-6 flex flex-wrap gap-2" aria-label="Tags de l'article">
+                @foreach ($post->tags as $tag)
+                    <li class="rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">{{ $tag->name }}</li>
+                @endforeach
+            </ul>
+        @endif
+
+        @if ($post->excerpt)
+            <p class="mb-6 text-lg text-gray-600">{{ $post->excerpt }}</p>
+        @endif
+
+        <div class="whitespace-pre-line leading-relaxed text-gray-800">{{ $post->body }}</div>
+
+        @can('update', $post)
+            <div class="mt-8 flex flex-wrap items-start gap-4">
+                <form method="POST" action="{{ route('posts.publication', $post) }}">
+                    @csrf
+                    @method('PATCH')
+
+                    <button type="submit" class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">{{ $post->is_published ? 'Dépublier' : 'Publier' }}</button>
+                </form>
+
+                <a href="{{ route('posts.edit', $post) }}" class="rounded-md border border-indigo-600 px-4 py-2 text-sm font-medium text-indigo-600 hover:bg-indigo-50">Modifier</a>
+
+                @can('delete', $post)
+                    <details>
+                        <summary class="cursor-pointer rounded-md border border-red-600 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50">Supprimer</summary>
+
+                        <form method="POST" action="{{ route('posts.destroy', $post) }}" class="mt-3 rounded-md border border-red-200 bg-red-50 p-4">
+                            @csrf
+                            @method('DELETE')
+
+                            <p class="mb-3 text-sm text-red-900">Cette action est définitive : l'article sera effacé de la base.</p>
+                            <button type="submit" class="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700">Confirmer la suppression</button>
+                        </form>
+                    </details>
+                @endcan
+            </div>
+        @endcan
     </article>
+
+    @if ($relatedPosts->isNotEmpty())
+        <section class="mt-12 border-t border-gray-200 pt-8" aria-labelledby="related-posts-heading">
+            <h2 id="related-posts-heading" class="mb-6 text-2xl font-bold text-gray-900">Dans la même catégorie</h2>
+            <div class="grid gap-6 md:grid-cols-2">
+                @foreach ($relatedPosts as $relatedPost)
+                    <x-post-card :post="$relatedPost" />
+                @endforeach
+            </div>
+        </section>
+    @endif
 </x-layout>
