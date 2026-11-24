@@ -4,114 +4,126 @@ Projet fil rouge de l'Atelier Framework Côté Serveur (Laravel 13, PHP 8.3+), 3
 
 Auteur : Ameni Kochbati, groupe MDW33.
 
-Mini-CMS évoluera au fil du semestre vers une petite plateforme de publication : pages publiques, back-office authentifié, API JSON et tests Pest. Chaque session se termine par un tag Git (`lab-01`, `lab-01b`, puis un tag par session).
+## Description
 
-## État actuel (tag lab-08)
+Mini-CMS est une application de publication avec des pages publiques, un back-office protégé par rôles, des catégories, des tags, des brouillons, des tests Pest et une API REST JSON en lecture et écriture. L'API utilise Sanctum pour l'authentification par jetons.
 
-- `GET /api/categories` et `GET /api/categories/{category}`, avec le nombre d'articles publiés de chaque catégorie.
-- `GET /api/posts?category=<slug>&tag=<slug>` : filtres par catégorie et par tag, comparaison exacte, slug inconnu refusé (422).
-- `POST /api/login` renvoie un jeton Sanctum ; `POST /api/logout` le révoque.
-- `POST`, `PUT/PATCH` et `DELETE /api/posts` protégés par `auth:sanctum`, avec les mêmes Form Requests et la même `PostPolicy` que le site (401, 403 et 422 en JSON).
-- Tests Pest `ApiReadTest`, `ApiWriteTest` et `PostApiTest`.
+## Fonctionnalités
 
-## Données de démonstration
-
-Après un clone, reconstruire la base avec `php artisan migrate:fresh --seed`. Attention : cette commande vide la base avant de la remplir.
-
-## Routes disponibles
-
-| Méthode | URI | Nom | Action |
-|---|---|---|---|
-| GET | `/` | `home` | `PageController@home` |
-| GET | `/a-propos` | `about` | `PageController@about` |
-| GET | `/heure` | `time` | `PageController@time` |
-| GET | `/posts` | `posts.index` | `PostController@index` |
-| GET | `/posts/archive/{year}` | `posts.archive` | `PostController@archive` |
-| GET | `/posts/create` | `posts.create` | `PostController@create` |
-| POST | `/posts` | `posts.store` | `PostController@store` |
-| GET | `/posts/{post}` | `posts.show` | `PostController@show` |
-| GET | `/api/posts` | `api.posts.index` | `Api\PostController@index` |
-| GET | `/api/posts/{post}` | `api.posts.show` | `Api\PostController@show` |
-| GET | `/api/categories` | `api.categories.index` | `Api\CategoryController@index` |
-| GET | `/api/categories/{category}` | `api.categories.show` | `Api\CategoryController@show` |
-| POST | `/api/login` | `api.login` | `Api\AuthController@login` |
-| POST | `/api/logout` | `api.logout` | `Api\AuthController@logout` |
-| POST | `/api/posts` | `api.posts.store` | `Api\PostController@store` |
-| PUT/PATCH | `/api/posts/{post}` | `api.posts.update` | `Api\PostController@update` |
-| DELETE | `/api/posts/{post}` | `api.posts.destroy` | `Api\PostController@destroy` |
-
-## Prérequis
-
-- PHP et Composer (PHP 8.3 ou plus depuis https://www.php.net/downloads, avec les extensions curl, fileinfo, mbstring, openssl, pdo_sqlite, sqlite3 et zip activées dans php.ini, et Composer depuis https://getcomposer.org).
-- Node.js LTS et npm.
-- Git.
+- Gestion des articles, catégories et tags.
+- Authentification, rôles administrateur/auteur et autorisations par Policy/Gate.
+- Brouillons visibles uniquement par leur auteur et les administrateurs.
+- API paginée avec filtres par catégorie et tag.
+- Ressources JSON, validation française, erreurs 401/403/404/422.
+- Authentification API par jetons Bearer Sanctum.
 
 ## Installation
 
-### Bash (Git Bash, macOS, Linux)
+### Bash
 
 ```bash
 git clone https://github.com/amenikochbati/mini-cm--larave.git
 cd mini-cm--larave
 composer install
 npm install
+npm run build
 cp .env.example .env
 php artisan key:generate
-touch database/database.sqlite
-php artisan migrate
+php artisan migrate:fresh --seed
+php artisan test
 composer run dev
 ```
 
-### PowerShell (Windows)
+### PowerShell
 
 ```powershell
 git clone https://github.com/amenikochbati/mini-cm--larave.git
 cd mini-cm--larave
 composer install
 npm install
+npm run build
 copy .env.example .env
 php artisan key:generate
-New-Item database\database.sqlite -ItemType File
-php artisan migrate
+php artisan migrate:fresh --seed
+php artisan test
 composer run dev
 ```
 
-Ouvrir ensuite http://localhost:8000 (adresse de l'application, différente de l'adresse de Vite sur le port 5173).
+Si Artisan demande la création de `database/database.sqlite`, confirmez avec `yes`.
+
+## Comptes de test
+
+- Administrateur : `test@example.com`, mot de passe `password`.
+- Les auteurs sont créés par les factories et le seeder. Leur mot de passe est `password`.
+
+## API
+
+### Endpoints
+
+| Méthode | URI | Nom |
+|---|---|---|
+| GET | `/api/posts` | `api.posts.index` |
+| GET | `/api/posts/{post}` | `api.posts.show` |
+| POST | `/api/posts` | `api.posts.store` |
+| PUT/PATCH | `/api/posts/{post}` | `api.posts.update` |
+| DELETE | `/api/posts/{post}` | `api.posts.destroy` |
+| GET | `/api/categories` | `api.categories.index` |
+| GET | `/api/categories/{category}` | `api.categories.show` |
+| GET | `/api/tags` | `api.tags.index` |
+| GET | `/api/tags/{tag}` | `api.tags.show` |
+| POST | `/api/login` | `api.login` |
+| POST | `/api/logout` | `api.logout` |
+
+Les filtres disponibles sur `/api/posts` sont `?per_page=`, `?category=<slug>` et `?tag=<slug>`.
+
+### Authentification par jeton
+
+Envoyez les identifiants à `POST /api/login`. Copiez la valeur `token` retournée et utilisez-la dans chaque requête protégée :
+
+```text
+Authorization: Bearer VOTRE_JETON
+Accept: application/json
+```
+
+### Codes d'erreur
+
+- `401` : jeton absent, invalide ou révoqué.
+- `403` : utilisateur authentifié mais non autorisé.
+- `404` : article, catégorie ou tag introuvable.
+- `422` : paramètres ou données du formulaire invalides.
+
+### Exemple curl.exe
+
+```powershell
+curl.exe -X POST -H "Accept: application/json" -H "Authorization: Bearer VOTRE_JETON" http://localhost:8000/api/logout
+```
+
+La déconnexion retourne `204 No Content`.
 
 ## Captures d'écran
 
-### Page d'accueil
+### Session 13
 
-![Page d'accueil de Mini-CMS](screenshots/s01-accueil.png)
+![Liste API dans Postman](screenshots/s13-postman-liste.png)
 
-### Liste des routes
+![Validation 422 dans Postman](screenshots/s13-postman-422.png)
 
-![Sortie de php artisan route:list](screenshots/s01-route-list.png)
+### Session 14
 
-### Page À propos
+![Création d'article API avec réponse 201](screenshots/s14-postman-201.png)
 
-![Page À propos](screenshots/s02-a-propos.png)
+![Autorisation refusée avec réponse 403](screenshots/s14-postman-403.png)
 
-### Accueil avec le layout
+## Choix d'architecture
 
-![Page d'accueil avec le layout](screenshots/s03-accueil.png)
+### Pourquoi les écritures de l'API passent par PostPolicy
 
-### Liste des articles
+Une seule `PostPolicy` décide qui peut modifier ou supprimer un article. Le site et l'API utilisent donc les mêmes règles : un auteur ne peut pas agir sur l'article d'une autre personne, tandis qu'un administrateur conserve ses droits. Cela évite qu'une API écrive directement dans la base en contournant les autorisations du site.
 
-![Liste des articles](screenshots/s03-articles.png)
+### Pourquoi preventLazyLoading est activé
 
-### Détail d'un article
+`preventLazyLoading` transforme les chargements paresseux en erreurs visibles pendant le développement. Une liste qui lit une relation sans `with()` peut alors provoquer une requête SQL supplémentaire par élément, le problème N+1. Les contrôleurs chargent donc les relations utiles explicitement.
 
-![Détail d'un article](screenshots/s03-article.png)
+### Pourquoi l'API utilise des jetons et non la session
 
-### Session 05
-
-![Liste paginée des articles](screenshots/s05-articles.png)
-
-![Formulaire avec erreurs de validation](screenshots/s05-formulaire.png)
-
-### Session 07
-
-![Liste des articles avec leur catégorie, leur auteur et leurs tags](screenshots/s07-liste-relations.png)
-
-![Page d'un article avec ses tags et les articles de la même catégorie](screenshots/s07-detail-tags.png)
+Le groupe `api` n'utilise ni cookie de session ni CSRF. Une application mobile, un script ou Postman présente donc un jeton Sanctum à chaque requête. Ce jeton peut être révoqué indépendamment des autres appareils, sans modifier la connexion au site.

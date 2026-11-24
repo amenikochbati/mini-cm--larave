@@ -66,3 +66,25 @@ it('returns a JSON 404 for an unknown category', function () {
         ->assertNotFound()
         ->assertJsonStructure(['message']);
 });
+
+it('lists tags with their published post counts', function () {
+    $tag = Tag::factory()->create();
+    $post = Post::factory()->published()->create();
+    $post->tags()->attach($tag);
+
+    $this->getJson('/api/tags')
+        ->assertOk()
+        ->assertJsonStructure([
+            'data' => ['*' => ['id', 'name', 'slug', 'posts_count']],
+        ])
+        ->assertJsonFragment([
+            'slug' => $tag->slug,
+            'posts_count' => 1,
+        ]);
+});
+
+it('returns a JSON 404 for an unknown tag', function () {
+    $this->getJson('/api/tags/999')
+        ->assertNotFound()
+        ->assertJsonStructure(['message']);
+});
