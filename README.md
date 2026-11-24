@@ -6,16 +6,13 @@ Auteur : Ameni Kochbati, groupe MDW33.
 
 Mini-CMS évoluera au fil du semestre vers une petite plateforme de publication : pages publiques, back-office authentifié, API JSON et tests Pest. Chaque session se termine par un tag Git (`lab-01`, `lab-01b`, puis un tag par session).
 
-## État actuel (tag lab-07)
+## État actuel (tag lab-08)
 
-- Middleware `admin` (`App\Http\Middleware\EnsureUserIsAdmin`) sur tout `/admin` : un auteur reçoit 403 « Réservé aux administrateurs. ».
-- Gate `manage-tags`, comme `manage-categories` : contrôleur, Form Requests et menu.
-- Brouillons protégés : `PostPolicy::view` et le scope `visibleTo` ; un brouillon n'est visible que par son auteur et les administrateurs.
-- API JSON en lecture seule, installée avec `php artisan install:api` (Sanctum installé ; les jetons arrivent en session 14).
-- `GET /api/posts` : articles publiés, paginés (`?per_page=` de 1 à 50, 5 par défaut), avec auteur, catégorie et tags.
-- `GET /api/posts/{post}` : un article publié ; un brouillon renvoie 403 et un numéro inconnu 404, en JSON.
-- Réponses mises en forme par `PostResource` et `CategoryResource` : ni e-mail ni rôle des auteurs, dates ISO 8601.
-- Tests d'autorisation : `AdminAccessTest`, `PostVisibilityTest` et `Api\PostApiTest`.
+- `GET /api/categories` et `GET /api/categories/{category}`, avec le nombre d'articles publiés de chaque catégorie.
+- `GET /api/posts?category=<slug>&tag=<slug>` : filtres par catégorie et par tag, comparaison exacte, slug inconnu refusé (422).
+- `POST /api/login` renvoie un jeton Sanctum ; `POST /api/logout` le révoque.
+- `POST`, `PUT/PATCH` et `DELETE /api/posts` protégés par `auth:sanctum`, avec les mêmes Form Requests et la même `PostPolicy` que le site (401, 403 et 422 en JSON).
+- Tests Pest `ApiReadTest`, `ApiWriteTest` et `PostApiTest`.
 
 ## Données de démonstration
 
@@ -35,6 +32,13 @@ Après un clone, reconstruire la base avec `php artisan migrate:fresh --seed`. A
 | GET | `/posts/{post}` | `posts.show` | `PostController@show` |
 | GET | `/api/posts` | `api.posts.index` | `Api\PostController@index` |
 | GET | `/api/posts/{post}` | `api.posts.show` | `Api\PostController@show` |
+| GET | `/api/categories` | `api.categories.index` | `Api\CategoryController@index` |
+| GET | `/api/categories/{category}` | `api.categories.show` | `Api\CategoryController@show` |
+| POST | `/api/login` | `api.login` | `Api\AuthController@login` |
+| POST | `/api/logout` | `api.logout` | `Api\AuthController@logout` |
+| POST | `/api/posts` | `api.posts.store` | `Api\PostController@store` |
+| PUT/PATCH | `/api/posts/{post}` | `api.posts.update` | `Api\PostController@update` |
+| DELETE | `/api/posts/{post}` | `api.posts.destroy` | `Api\PostController@destroy` |
 
 ## Prérequis
 
