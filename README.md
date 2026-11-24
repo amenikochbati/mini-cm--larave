@@ -6,12 +6,20 @@ Auteur : Ameni Kochbati, groupe MDW33.
 
 Mini-CMS évoluera au fil du semestre vers une petite plateforme de publication : pages publiques, back-office authentifié, API JSON et tests Pest. Chaque session se termine par un tag Git (`lab-01`, `lab-01b`, puis un tag par session).
 
-## État actuel (tag lab-02)
+## État actuel (tag lab-07)
 
-- Routes nommées, toutes servies par des contrôleurs : `PageController` (pages) et `PostController` (articles).
-- Articles stockés dans un tableau PHP, sans base de données pour l'instant.
-- Layout Blade `<x-layout>` avec Tailwind chargé par Vite.
-- Base de données SQLite locale (`database/database.sqlite`, non versionnée).
+- Middleware `admin` (`App\Http\Middleware\EnsureUserIsAdmin`) sur tout `/admin` : un auteur reçoit 403 « Réservé aux administrateurs. ».
+- Gate `manage-tags`, comme `manage-categories` : contrôleur, Form Requests et menu.
+- Brouillons protégés : `PostPolicy::view` et le scope `visibleTo` ; un brouillon n'est visible que par son auteur et les administrateurs.
+- API JSON en lecture seule, installée avec `php artisan install:api` (Sanctum installé ; les jetons arrivent en session 14).
+- `GET /api/posts` : articles publiés, paginés (`?per_page=` de 1 à 50, 5 par défaut), avec auteur, catégorie et tags.
+- `GET /api/posts/{post}` : un article publié ; un brouillon renvoie 403 et un numéro inconnu 404, en JSON.
+- Réponses mises en forme par `PostResource` et `CategoryResource` : ni e-mail ni rôle des auteurs, dates ISO 8601.
+- Tests d'autorisation : `AdminAccessTest`, `PostVisibilityTest` et `Api\PostApiTest`.
+
+## Données de démonstration
+
+Après un clone, reconstruire la base avec `php artisan migrate:fresh --seed`. Attention : cette commande vide la base avant de la remplir.
 
 ## Routes disponibles
 
@@ -22,7 +30,11 @@ Mini-CMS évoluera au fil du semestre vers une petite plateforme de publication 
 | GET | `/heure` | `time` | `PageController@time` |
 | GET | `/posts` | `posts.index` | `PostController@index` |
 | GET | `/posts/archive/{year}` | `posts.archive` | `PostController@archive` |
-| GET | `/posts/{slug}` | `posts.show` | `PostController@show` |
+| GET | `/posts/create` | `posts.create` | `PostController@create` |
+| POST | `/posts` | `posts.store` | `PostController@store` |
+| GET | `/posts/{post}` | `posts.show` | `PostController@show` |
+| GET | `/api/posts` | `api.posts.index` | `Api\PostController@index` |
+| GET | `/api/posts/{post}` | `api.posts.show` | `Api\PostController@show` |
 
 ## Prérequis
 
@@ -87,3 +99,15 @@ Ouvrir ensuite http://localhost:8000 (adresse de l'application, différente de l
 ### Détail d'un article
 
 ![Détail d'un article](screenshots/s03-article.png)
+
+### Session 05
+
+![Liste paginée des articles](screenshots/s05-articles.png)
+
+![Formulaire avec erreurs de validation](screenshots/s05-formulaire.png)
+
+### Session 07
+
+![Liste des articles avec leur catégorie, leur auteur et leurs tags](screenshots/s07-liste-relations.png)
+
+![Page d'un article avec ses tags et les articles de la même catégorie](screenshots/s07-detail-tags.png)
